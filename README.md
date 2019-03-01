@@ -1,7 +1,9 @@
-"# RLDQTrading" 
+# RLDQTrading 
 
 Check RLDataExample now, just format and features of the written datafiles with MLWriteRLTrainData
 https://pvoodoo.blogspot.com/2019/03/writetraindata-tool-for-reinforcement.html
+
+Supervised models available too, check the blog.
 
 Additional files coming step by step
 
