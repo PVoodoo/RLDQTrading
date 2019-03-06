@@ -7,6 +7,8 @@ If you wonder the special Bar type, MBT, it is actually a special adaptive bar t
 
 Supervised models available too, check the blog.
 
+
+##Files:
 Additional files coming step by step:
 
 PVQTrain.py = main train program, let see if Day Trade progam is inside or separate
@@ -19,12 +21,11 @@ functions.py  Actually have an important function, getNextPositionState as it de
 
 constant.py Defines some important values like COmissions, need to be changed based to instrument 
 
-
-
+##Other:
 
 Probably some notebook formats added to use the whole system in colab.research.google.com (keras, GPU)
 
-Resources:
+##Resources:
 
 [Financial Trading as a Game: A Deep Reinforcement Learning Approach](https://arxiv.org/abs/1807.02787)
 
