@@ -3,6 +3,7 @@
 # python PVQEvaluate.py RLDataForCL30 RLDataForCL30_500 
 # Programming marko.rantala@pvoodoo.com
 # v1.0.0.1 20190305 
+# v1.0.0.2 20190307 eod
 ##############################
 # my own ad: For NinjaTrader related stuff: check https://pvoodoo.com or blog: https://pvoodoo.blogspot.com/?view=flipcard
 ##############################
@@ -17,6 +18,8 @@ from functions import *
 import sys
 import constant
 
+Debug=True
+
 if len(sys.argv) != 3:
 	print("Usage: python evaluate.py [stock] [model] ")
 	exit()
@@ -28,12 +31,18 @@ if Debug:
     print(model.layers[0].input.shape.as_list())
 timesteps = model.layers[0].input.shape.as_list()[1]
 
-prices, data = getStockDataVec(stock_name, timesteps, model_name=model_name)
+dayTrading=False
+if stock_name[-1:] == 'D':  # just to see if datafile is ending with D, writer program https://pvoodoo.blogspot.com/2019/03/writetraindata-tool-for-reinforcement.html is adding this automatically if DayTrading data generated 
+    dayTrading = True
+
+prices, data, eod = getStockDataVec(stock_name, timesteps, model_name=model_name, dayTrading=dayTrading)
 agent = PVAgent(data.shape[1], data.shape[2], is_eval=True, model_name=model_name)
 
 l = len(data) - 1
 batch_size = 32
 
+if Debug:
+    print(prices.shape, data.shape, eod.shape)
 
 total_profit = 0.0
 agent.inventory = []
@@ -42,36 +51,46 @@ market_state = getState(data, 0)
 position_state = np.array([1,0,0,0.0]).reshape(1,4) # [Flat,Long,Short,PnL]  what the hell is turning this ... 
 state = [market_state, position_state]
 
+
+# all next ts_ only for illustration purposes
 ts_buy = []
 ts_sell = []
+ts_eod = []
 ts_PnL =  np.zeros(l)
 ts_CumPnL = np.zeros(l)
-ts_Action = np.zeros(l)
+ts_Action = np.zeros(l)  # let's show that too what is proposed by nn
 
 for t in range(l):
     action = agent.act(state)
     ts_Action[t] = action
+    if int(eod[t]) == 1: # t or t + 1   ????????????????????????, t is right here, maybe the whole data should be sifted 1 
+        ts_eod.append(t)
+
 
     next_market_state = getState(data, t + 1)
     
   
-    if (action == 1) and (state[1][0][1] < constant.MAXCONTRACTS):# buy
-        ts_buy.append(t)
+    if (action == 1) and (state[1][0][1] < constant.MAXCONTRACTS) and eod[t+1] < 1:# buy
+        ts_buy.append(t+1)
         if Debug:
             print("Buy before, state",state[1][0])
-    elif action == 2 and state[1][0][2] < constant.MAXCONTRACTS: # sell
-        ts_sell.append(t)
+    elif action == 2 and state[1][0][2] < constant.MAXCONTRACTS and eod[t+1] < 1: # sell
+        ts_sell.append(t+1)
         if Debug:
             print("Sell before, state",  state[1][0])
+    
         
-    next_position_state, immediate_reward, PnL = getNextPositionState(action, state[1][0], prices[t], prices[t+1])
+    next_position_state, immediate_reward, PnL = getNextPositionState(action, state[1][0], prices[t], prices[t+1], eod[t+1])
     total_profit += PnL*constant.POINTVALUE
- 
+    #reward = immediate_reward + PnL
+    
     if (Debug):
         if (action == 1) and (state[1][0][1] < constant.MAXCONTRACTS):# buy
             print("Buy after", next_position_state, PnL)
         elif action == 2 and state[1][0][2] < constant.MAXCONTRACTS: # sell 
             print("Sell after",  next_position_state, PnL)
+    
+     
 
     if PnL != 0.0:
         ts_PnL[t] = PnL*constant.POINTVALUE
@@ -105,6 +124,7 @@ ax2 = ax1.twinx()
 ax2.plot(ts, data[ts], zorder=3)
 ax2.scatter(ts_buy, data[ts_buy], c="g", label="Buy")
 ax2.scatter(ts_sell, data[ts_sell], c="r", label="Sell")
+ax2.scatter(ts_eod, data[ts_eod], color="magenta", label="EoD")  # this could be written directly from eod
 ax2.set_ylabel('Price')
 
 ax1.set_ylabel('PnL, USD')
@@ -117,3 +137,7 @@ ax1.axhline(0, color='gray', lw=1)
 plt.legend()
 fig.tight_layout() 
 plt.show()
+
+##############################
+# my own ad: For NinjaTrader related stuff: check https://pvoodoo.com or blog: https://pvoodoo.blogspot.com/?view=flipcard
+##############################

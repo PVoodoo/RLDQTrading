@@ -1,6 +1,7 @@
-# some common functions, maybe getNextPositionState should be somewhere else... actually so small so no reimplememention
+# some common functions, maybe getNextPositionState and run_flat should be somewhere else... in PVAgent, actually so small so no reimplememention
 # Programming marko.rantala@pvoodoo.com
 # v1.0.0.1 20190305
+# v1.0.0.2 20190307 eod
 ##############################
 # own ad: For NinjaTrader related stuff: check https://pvoodoo.com or blog: https://pvoodoo.blogspot.com/?view=flipcard
 ##############################
@@ -11,9 +12,11 @@ from sklearn.preprocessing import MinMaxScaler  # save this scaler to model dire
 from sklearn.externals import joblib
 import constant
 
-scaler = MinMaxScaler(feature_range=(0.1, 1))  
 Debug=True
-#constant.MAXCONTRACTS = 1 # maybe better place needed for this, Setup, same as for slippage and so on.. 
+
+scaler = MinMaxScaler(feature_range=(0.1, 1))  
+
+#constant.MAXCONTRACTS = 1 # maybe better place needed for this, Setup, same as for slippage and so on..   -> constant
 #constant.COMMISSION = 0.0  # Like one TickSize min should be right, see TickSize from InputFile, written there for your info
 # Slippage add to commission so maybe 2 TickSize together would be quite common. 
 
@@ -57,13 +60,23 @@ def formatPrice(n):
 
 # returns the vector containing stock data, "prices and features" from a fixed file, scaling done for features
 # scaling is dumpped to model directory if new_scaling=true or tried to read from there if using existing one...
-def getStockDataVec(key, timesteps, model_name=""):
+def getStockDataVec(key, timesteps, model_name="", dayTrading=False):
 
     data = np.genfromtxt("data/"+ key + ".csv",delimiter=';',skip_header=1,  dtype="float_")[:,1:] # date removed 
     if Debug:
         print("func Datashape: ", data.shape)
     prices = data[:,0]   # column 0 after date removed
-    features = data[:,1:] # price removed, column 1
+    
+    #eod = data[:,1] # column 1 after price (or some not used feature if not )
+    startFeatures = 1  # normal mode
+    if dayTrading:
+        eod = data[:,1] # column 1 after price (or some not used feature if not )
+        startFeatures = 2
+    else:
+        eod = np.zeros(len(data), dtype=int)
+    eod[len(data)-1] = 1  # only last is marked, so take flat position there , maybe last DayTrading data should be marked as well! yes, if not session boundary, just remove ident here, or add now if not needed 
+        
+    features = data[:,startFeatures:] # price removed, column 1 or 2 based to dayTrading
     
     scaler = MinMaxScaler(feature_range=(0.1, 1)) 
     if model_name=="":  # expect training
@@ -72,11 +85,13 @@ def getStockDataVec(key, timesteps, model_name=""):
         joblib.dump(scaler, "models/"  +key+ "_skaler.sav")
     else: # use existing scaler, datafile can be different but model name should define model and scaling 
         scaler = joblib.load("models/"  +model_name.split("_")[0]+ "_skaler.sav") # split to cut number of epochs away ...
-    
+        # if this fails, a new fit could be thought here too
+        
     scaledFeatures = scaler.transform(features)
     
     features3D = make_timesteps(scaledFeatures, timesteps) # non full feature sets removed 
     prices = prices[timesteps-1:]  # cut as well
+    eod = eod[timesteps-1:] ## 
     
     assert features3D.shape[0] != prices.shape, "Shape error"
     
@@ -88,7 +103,7 @@ def getStockDataVec(key, timesteps, model_name=""):
 
 	#for line in lines[1:]:
 	#	vec.append(float(line.split(",")[4]))
-    return prices, features3D
+    return prices, features3D, eod
 
 # returns the sigmoid, no need here any more
 def sigmoid(x):
@@ -108,7 +123,7 @@ def getState(data, t):
 # or modify this that way that no short selling or what ever 
 
 # position state [Flat,Long,Short, Pnl]
-def getNextPositionState(action, position_state, prev_price, price):  # or is it price , next_price
+def getNextPositionState(action, position_state, prev_price, price, eod):  # or is it price , next_price
     
     
     price_diff = price - prev_price
@@ -116,6 +131,7 @@ def getNextPositionState(action, position_state, prev_price, price):  # or is it
     full_pnl = 0.0
     comission_count = 0
     
+        
     # make some type cast not to compare floats
     # F = int(position_state[0])  # Flat, either 0 or 1
     L = int(position_state[1])  # Long, how many contracts, stock_count or ..
@@ -125,10 +141,12 @@ def getNextPositionState(action, position_state, prev_price, price):  # or is it
     
     if L > 0:
         immediate_reward = position_state[1]*price_diff
-    
         
     if S > 0:
         immediate_reward = -1.0*position_state[2]*price_diff  
+        
+    if eod == 1:   # no new positions taken, although
+        return run_flat(position_state, immediate_reward)                            # exit here tooo 
         
     # position_state[3] += immediate_reward  # full PnL , after action
 
@@ -157,16 +175,29 @@ def getNextPositionState(action, position_state, prev_price, price):  # or is it
         full_pnl = position_state[3] # this is where we return full pnl from previous trade !, it is already calculated here 
         position_state[3] = 0.0
      
-    #if  position_state[0] == 1:  # next two line moved to previous else: as we know now that position_state is 1 (or )
+    #if  position_state[0] == 1:  # next two line moved to previous else: as we know now that position_state is 1 = Flat(or )
      #   full_pnl = position_state[3]   # this is where we return full pnl from previous trade !, it is already calculated here 
       #  position_state[3] = 0.0
         
     #if prev_state == 1 and position_state[1] > 0 and position_state[3] == 0:
     #    print(price_diff, immediate_reward, full_pnl, comission_count )
     
-    return  position_state, immediate_reward, full_pnl
-            
-            
-            
-            
-        
+    return  position_state, immediate_reward, full_pnl  # realize that position_state is not a new allocation, it points to prev np array where values has been changed 
+
+
+def run_flat(position_state, immediate_reward):
+
+    full_pnl = position_state[3] + immediate_reward - position_state[1]*constant.COMMISSION - position_state[2]*constant.COMMISSION  # FYI either position_state[0 or 1] is zero or both
+
+    # set flat
+    position_state[0] = 1;
+    position_state[1] = 0;
+    position_state[2] = 0;
+    position_state[3] = 0.0;
+    
+    return position_state, immediate_reward, full_pnl
+
+
+##############################
+# own ad: For NinjaTrader related stuff: check https://pvoodoo.com or blog: https://pvoodoo.blogspot.com/?view=flipcard
+##############################        
