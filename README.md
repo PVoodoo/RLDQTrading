@@ -11,15 +11,19 @@ Supervised models available too, check the blog.
 ## Files:
 Additional files coming step by step:
 
-PVQTrain.py = main train program, let see if Day Trade progam is inside or separate
+PVQTrain.py = main train program, DayTrading model inside, 
+Usage: python PVQTrain.py [stockfile] [episodes] [timesteps]
+Example: python PVQTrain.py RLDataForCL30 1000 4 
 
 PVQEvaluate.py to show and predict trades, out of data too
+Usage: python PVQEvaluate.py [stockfile] [model]
+Example: python PVQEvaluate.py RLDataForCL30 RLDataForCL30_1000 
 
 PVAgent.py keras model and reinforcement learning setup 
 
 functions.py  Actually have an important function, getNextPositionState as it defines how the predicted actions are handled, now step by step, like no immediate reverse position from other position (has to go via Flat)
 
-constant.py Defines some important values like COmissions, need to be changed based to instrument 
+constant.py Defines some important values like Comissions, need to be changed based to instrument 
 
 ## Other:
 
