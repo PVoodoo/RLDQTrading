@@ -22,7 +22,7 @@ class PVAgent:
   def __init__(self, time_steps, feature_count, is_eval=False, model_name=""):
     self.time_steps = time_steps  # period 
     self.feature_count = feature_count
-    self.action_size = 3  # sit, buy, sell
+    self.action_size = 3  # no_action, buy, sell
     self.memory = deque(maxlen=256)  # according some new study, no need to be high at stock data .. but try 256,512,1024  (DayTrading -> short is okay)  
     self.inventory = []
     self.model_name = model_name
@@ -44,7 +44,11 @@ class PVAgent:
     state_input = Input(shape=(4,)) # 2D [Flat,Long,Short,Current_PnL]  anyway to merge this , position features
     #state_input = Input() what if this is not connected ?, lets try
     
-    flattened_price = Flatten()(price_input)  # 3D shape is/was meant to LSTMm, CONV, recurrent models,  keep time_steps short otherwise, even 1 if reasonable feature match, try those recurrent ones too!!
+    lstm = LSTM(32, return_sequences=False)(price_input)
+    
+    flattened_price=lstm
+    
+    #flattened_price = Flatten()(price_input)  # 3D shape is/was meant to LSTMm, CONV, recurrent models,  keep time_steps short otherwise, even 1 if reasonable feature match, try those recurrent ones too!!
     
     merged = concatenate([flattened_price, state_input], axis=1)   # the most simplest merged model now 
     
@@ -113,3 +117,7 @@ class PVAgent:
 
     if self.epsilon > self.epsilon_min:
       self.epsilon *= self.epsilon_decay
+
+##############################
+# own ad: For NinjaTrader related stuff: check https://pvoodoo.com or blog: https://pvoodoo.blogspot.com/?view=flipcard
+##############################
