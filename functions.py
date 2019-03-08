@@ -123,6 +123,7 @@ def getState(data, t):
 # or modify this that way that no short selling or what ever 
 
 # position state [Flat,Long,Short, Pnl]
+# next one is not good, some "thinking" errors, will be corrected soon
 def getNextPositionState(action, position_state, prev_price, price, eod):  # or is it price , next_price
     
     
