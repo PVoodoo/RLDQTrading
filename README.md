@@ -24,13 +24,14 @@ Example: python PVQEvaluate.py RLDataOutOfDataForCL30D RLDataForCL30D_1000
 
 PVAgent.py keras model and reinforcement learning setup 
 
-functions.py  Actually have an important function, getNextPositionState as it defines how the predicted actions are handled, now step by step, like no immediate reverse position from other position (has to go via Flat)
+functions.py  Actually have an important function, getNextPositionState as it defines how the predicted actions are handled, now step by step, like no immediate reverse position from other position (has to go via Flat state)
 
 constant.py Defines some important values like Comissions, need to be changed based to instrument 
 
 ## Other:
 
 Probably some notebook formats added to use the whole system in colab.research.google.com (keras, GPU)
+FYI, No reason to run this with GPU as epoch = 1, faster with CPU model (data transfer do not delay)
 
 ## Resources:
 
