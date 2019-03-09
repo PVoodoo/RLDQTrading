@@ -70,17 +70,17 @@ for t in range(l):
     next_market_state = getState(data, t + 1)
     
   
-    if (action == 1) and (state[1][0][1] < constant.MAXCONTRACTS) and eod[t+1] < 1:# buy
+    if (action == 1) and (state[1][0][1] < constant.MAXCONTRACTS): #  and eod[t+1] < 1:# buy do not
         ts_buy.append(t+1)
         if Debug:
             print("Buy before, state",state[1][0])
-    elif action == 2 and state[1][0][2] < constant.MAXCONTRACTS and eod[t+1] < 1: # sell
+    elif action == 2 and state[1][0][2] < constant.MAXCONTRACTS: #  and eod[t+1] < 1: # sell
         ts_sell.append(t+1)
         if Debug:
             print("Sell before, state",  state[1][0])
     
         
-    next_position_state, immediate_reward, PnL = getNextPositionState(action, state[1][0], prices[t], prices[t+1], eod[t+1])
+    next_position_state, immediate_reward, PnL = getNextPositionState(action, state[1][0], prices[t], prices[t+1], eod[t+1], eod[t])
     total_profit += PnL*constant.POINTVALUE
     #reward = immediate_reward + PnL
     

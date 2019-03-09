@@ -123,8 +123,7 @@ def getState(data, t):
 # or modify this that way that no short selling or what ever 
 
 # position state [Flat,Long,Short, Pnl]
-# next one is not good, some "thinking" errors, will be corrected soon
-def getNextPositionState(action, position_state, prev_price, price, eod):  # or is it price , next_price
+def getNextPositionStateWrong(action, position_state, prev_price, price, eod):  # or think it like current  price and  next_price  !!!!!!!!!!!!!!!!!!!!!!
     
     
     price_diff = price - prev_price
@@ -134,7 +133,7 @@ def getNextPositionState(action, position_state, prev_price, price, eod):  # or 
     
         
     # make some type cast not to compare floats
-    # F = int(position_state[0])  # Flat, either 0 or 1
+    #F = int(position_state[0])  # Flat, either 0 or 1
     L = int(position_state[1])  # Long, how many contracts, stock_count or ..
     S = int(position_state[2])  # Short, how many ..
     
@@ -197,6 +196,135 @@ def run_flat(position_state, immediate_reward):
     position_state[3] = 0.0;
     
     return position_state, immediate_reward, full_pnl
+
+# let's skip the flat position between states, take opposite position at opposite signal, simplified version 
+# or actually different, should there be an additional action, exit => go Flat ???, yes , implemented with signal 0 (if active signal)
+def getNextPositionState(action, position_state, prev_price, price, eod, prev_eod):  # or think it like current  price and  next_price  !!!!!!!!!!!!!!!!!!!!!!
+# position state [Flat,Long,Short, Pnl]
+    
+    
+    price_diff = price - prev_price
+    immediate_reward = 0.0
+    full_pnl = 0.0
+    comission_count = 0
+    
+    if constant.IGNORE_EOD_ACTIVATION and prev_eod == 1:  # no new state (should be okay after last bars flat set)
+        return position_state, 0.0, 0.0
+    
+    if action == 0: # next one used anyway now # and constant.ACTIONZERO == 1:
+        full_pnl = position_state[3] - position_state[1]*constant.COMMISSION - position_state[2]*constant.COMMISSION  # either one [1],[2] or both are zero 
+        # immediate_reward = 0.0
+        position_state[0] = 1
+        position_state[1] = 0
+        position_state[2] = 0
+        position_state[3] = 0.0
+        return  position_state, immediate_reward, full_pnl   # 
+        
+        
+    # make some type cast not to compare floats
+    F = int(position_state[0])  # Flat, either 0 or 1
+    LC = int(position_state[1])  # Long, how many contracts, stock_count or ..
+    SC = int(position_state[2])  # Short, how many ..
+    
+    
+    #prev_state = position_state[1] 
+    
+    if action == 1:  # buy
+        if SC > 0:
+            full_pnl = position_state[3] - SC*constant.COMMISSION 
+        if LC < constant.MAXCONTRACTS:  
+            immediate_reward = price_diff - constant.COMMISSION # one buy, more 
+            position_state[1] += 1 
+            if LC > 0: # SC can't be positive then, no need to worry next at that point ,, CHECK LC == 0 and 
+                position_state[3] += (LC+1)*price_diff
+        if LC == constant.MAXCONTRACTS:
+            position_state[3] += LC*price_diff   # and no immediate reward any more 
+        if F == 1: 
+            # immediate_reward = price_diff  # already above at LC <
+            position_state[1] == 1
+            # position_state[2] == 0 
+            position_state[3] = price_diff - constant.COMMISSION
+            
+        position_state[0] = 0
+        position_state[2] = 0
+        # position_state[3]  # should be calculated above to all possibilities
+        
+    if action == 2:  # sell
+        if LC > 0:
+            full_pnl = position_state[3] - LC*constant.COMMISSION 
+        if SC < constant.MAXCONTRACTS:  
+            immediate_reward = -1*price_diff - constant.COMMISSION # one buy, more 
+            position_state[2] += 1 
+            if SC > 0: # SC can't be positive then, no need to worry next at that point ,, CHECK LC == 0 and 
+                position_state[3] += (LC+1)*-1*price_diff
+        if SC == constant.MAXCONTRACTS:
+            position_state[3] += LC*-1.0*price_diff   # and no immediate reward any more 
+        if F == 1: 
+            # immediate_reward = price_diff  # already above at LC <
+            position_state[2] == 1
+            # position_state[2] == 0 
+            position_state[3] = -1*price_diff - constant.COMMISSION
+            
+        position_state[0] = 0
+        position_state[1] = 0
+        # position_state[3]  # should be calculated above to all possibilities
+  
+            
+    # if L > 0:
+        # immediate_reward = position_state[1]*price_diff # nope, if state was 
+        
+    # if S > 0:
+        # immediate_reward = -1.0*position_state[2]*price_diff  
+        
+    # if eod == 1:   # no new positions taken, although
+        # return run_flat(position_state, immediate_reward)                            # exit here tooo 
+        
+    # # position_state[3] += immediate_reward  # full PnL , after action
+
+    # if action == 1:  # buy
+        # if S >= 1:  # sell opposite if exit or buy a new one 
+            # position_state[2] -= 1   # sell 
+            # comission_count += 1
+        # elif L < constant.MAXCONTRACTS:
+            # position_state[1] += 1 
+            # comission_count += 1
+            
+    # if action == 2:  # sell
+        # if L >= 1:  # sell opposite if exit or buy a new one 
+            # position_state[1] -= 1
+            # comission_count += 1
+        # elif S < constant.MAXCONTRACTS:
+            # position_state[2] += 1 
+            # comission_count += 1    
+
+    # position_state[3] = position_state[3] + immediate_reward - comission_count*constant.COMMISSION     #fullPNL , comission_count is max 1 here now but if diff turn policy implemented...  
+      
+    # if position_state[1] > np.finfo(float).eps or position_state[2] > np.finfo(float).eps:   # should I compare to  double.epsilon and not to 0, whats that in python...? let's find out..   
+        # position_state[0] = 0
+    # else:
+        # position_state[0] = 1
+        # full_pnl = position_state[3] # this is where we return full pnl from previous trade !, it is already calculated here 
+        # position_state[3] = 0.0
+     
+    #if  position_state[0] == 1:  # next two line moved to previous else: as we know now that position_state is 1 = Flat(or )
+     #   full_pnl = position_state[3]   # this is where we return full pnl from previous trade !, it is already calculated here 
+      #  position_state[3] = 0.0
+        
+    #if prev_state == 1 and position_state[1] > 0 and position_state[3] == 0:
+    #    print(price_diff, immediate_reward, full_pnl, comission_count )
+    
+    if eod == 1:     # make flat after this BUT important, either action 1 or 2 can have affect (calculated above) , so last bar action has a special handling
+        full_pnl = position_state[3] - position_state[1]*constant.COMMISSION - position_state[2]*constant.COMMISSION  # either one [1],[2] or both are zero 
+        # immediate reward based to action above, if buy or sell 
+        position_state[0] = 1
+        position_state[1] = 0
+        position_state[2] = 0
+        position_state[3] = 0.0
+        return  position_state, immediate_reward, full_pnl   # 
+    
+    return  position_state, immediate_reward, full_pnl  # realize that position_state is not a new allocation, it points to prev np array where values has been changed 
+
+
 
 
 ##############################

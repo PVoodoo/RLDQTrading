@@ -3,12 +3,20 @@
 # Programming marko.rantala@pvoodoo.com 
 # 
  
-# as many contract allowed together, FYI, current model trade those one by one , even reverse
+# as many contract allowed together, FYI, current model trade those one by one , 
 # here, although some different models can be thought where this is not fixed but variable based to account value and so on...  
 MAXCONTRACTS = 1
 
+# "Action " 0  can be either keep current position or make flat, different results expected , but probably better to stay with three action than take forth like (Keep, take long, take short, exit position)
+ACTIONZERO = 1 # active one, = exit current position with this action
+#ACTIONZERO = 0 # passive, keep current position , not implemented yet 
 
-#actully previous could be implemented as 
+#eod handling, if state initialization at last bar, ignore !!!!, typical for day trading, do not take position at open of next day based to prev day info,
+#wait at least one bar
+IGNORE_EOD_ACTIVATION = True # = no new position at the beginning of the next day, although this might be otherwise too, calculate next days prediction totally based to prev date
+# or IGNORE_EOD_ACTIVATION = False
+
+#actully previous MAXCONTRACTS could be implemented as 
 #MAXLONGCONTRACTS = 1
 #and 
 #MAXSHORTCONTRACTS = 1
@@ -20,7 +28,7 @@ MAXCONTRACTS = 1
 # Pointvalue is as info in the datafile too
 COMMISSION = 0.0
 
-POINTVALUE = 1.0   # just to get right USD value for trades, example from CL, Training side  "PointValue" = 1 but to give final results right, so no effect to training
+POINTVALUE = 1.0   # just to get right USD value for trades, example from CL POINTVALUE = 1000, Training side  "PointValue" = 1 but to give final results right, so no effect to training
 
 # some important setups could be given given here , need to be implemented at getNextPositionState (now in functions.py)
 #STOPLOSS 
