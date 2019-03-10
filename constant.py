@@ -1,11 +1,12 @@
 # use this file to set some common "variables", could be instrument wise too
 # 20190305 v1.0.0.1
+# v1.0.1.0 20190310 Start of 
 # Programming marko.rantala@pvoodoo.com 
 # 
  
 # as many contract allowed together, FYI, current model trade those one by one , 
 # here, although some different models can be thought where this is not fixed but variable based to account value and so on...  
-MAXCONTRACTS = 1
+MAXCONTRACTS = 2
 
 # "Action " 0  can be either keep current position or make flat, different results expected , but probably better to stay with three action than take forth like (Keep, take long, take short, exit position)
 ACTIONZERO = 1 # active one, = exit current position with this action
@@ -14,7 +15,7 @@ ACTIONZERO = 1 # active one, = exit current position with this action
 #eod handling, if state initialization at last bar, ignore !!!!, typical for day trading, do not take position at open of next day based to prev day info,
 #wait at least one bar
 IGNORE_EOD_ACTIVATION = True # = no new position at the beginning of the next day, although this might be otherwise too, calculate next days prediction totally based to prev date
-# or IGNORE_EOD_ACTIVATION = False
+#IGNORE_EOD_ACTIVATION = False  # or use this
 
 #actully previous MAXCONTRACTS could be implemented as 
 #MAXLONGCONTRACTS = 1
@@ -26,7 +27,7 @@ IGNORE_EOD_ACTIVATION = True # = no new position at the beginning of the next da
 # slippage is included to commission!, check the datafile as it has TickSize info, usually you should have a slippage at least 1 Tick as well for Commission
 # so set COMMISSION like 2*Ticksize mentioned in datafile, example, CL = TickSize 0.01 set COMMISSION 0.02
 # Pointvalue is as info in the datafile too
-COMMISSION = 0.0
+COMMISSION = 0.01
 
 POINTVALUE = 1.0   # just to get right USD value for trades, example from CL POINTVALUE = 1000, Training side  "PointValue" = 1 but to give final results right, so no effect to training
 

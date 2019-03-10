@@ -5,6 +5,7 @@
 # v1.0.0.1 initial revisio
 # v1.0.0.2 Daytrading mode added, eod
 # v1.0.0.3 plt
+# v1.0.1.0 20190310 Start of ..
 # Programming marko.rantala@pvoodoo.com 
 # Input data format, see https://pvoodoo.blogspot.com/2019/03/writetraindata-tool-for-reinforcement.html
 # The model is based very much to traditional cartpole example, added with some "smart"? ...
@@ -60,6 +61,7 @@ pnl_track = []
     
     
 position_state = np.array([1,0,0, 0.0 ]).reshape(1,4)
+best_profit = 0.0
 
 for e in range(episode_count + 1):
     if (Debug):
@@ -116,8 +118,9 @@ for e in range(episode_count + 1):
         if len(agent.memory) > batch_size:
             agent.expReplay(batch_size)
 
-    if e % 50 == 0:
+    if e % 50 == 0 or total_profit > best_profit:
         agent.model.save("models/" + stock_name + "_" + str(e) + ".h5")
+        best_profit = total_profit
  
 # save the final mode   
 agent.model.save("models/" + stock_name + "_" + str(e) + ".h5") 
