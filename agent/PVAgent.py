@@ -1,6 +1,8 @@
 # mainly keras model to RLDQ model, some important settings here so far
 # Programming marko.rantala@pvoodoo.com
-# v1.0.0.1 20190503
+# v1.0.0.1 20190305
+# 1.0.0.3  20190308 model changed 
+# v1.0.1.0 20190310 Start of 
 ##############################
 # own ad: For NinjaTrader related stuff: check https://pvoodoo.com or blog: https://pvoodoo.blogspot.com/?view=flipcard
 ##############################
@@ -29,39 +31,45 @@ class PVAgent:
     self.is_eval = is_eval
 
     # next ones are actually quite important here, try with different settings!
-    self.gamma = 0.95   #
+    self.gamma = 0.80   #
     self.epsilon = 1.0
     self.epsilon_min = 0.01
     self.epsilon_decay = 0.995
+    self.learning_rate = 0.001   # actually a learning rate to Adam optimizer 
 
     self.model = load_model("models/" + model_name + ".h5") if is_eval else self._model()
 
+    
+    # just a simple model first, add dropouts and experiment some diff shapes and sizes and activations
+   
   def _model(self):
   
   
     price_input = Input(shape=(self.time_steps, self.feature_count))   # 3D shape here.., actually market features, suitable directly to recurrent neural networks
     
-    state_input = Input(shape=(4,)) # 2D [Flat,Long,Short,Current_PnL]  anyway to merge this , position features
-    #state_input = Input() what if this is not connected ?, lets try
+    lstm = LSTM(32, return_sequences=True, activation="relu")(price_input)
+    flattened_price = LSTM(16, return_sequences=False, activation="relu")(lstm)  # or without that but you need to set return sequences false at previous then to get flattened shape
     
-    lstm = LSTM(32, return_sequences=False)(price_input)
-    
-    flattened_price=lstm
-    
+    # flattened_price=lstm
     #flattened_price = Flatten()(price_input)  # 3D shape is/was meant to LSTMm, CONV, recurrent models,  keep time_steps short otherwise, even 1 if reasonable feature match, try those recurrent ones too!!
     
-    merged = concatenate([flattened_price, state_input], axis=1)   # the most simplest merged model now 
+    state_input = Input(shape=(4,)) # 2D [Flat,Long,Short,Current_PnL]  anyway to merge this , position features
+ 
+    state = Dense(8, activation="relu")(state_input)
+    #state_input = Input() what if this is not connected ?, lets try
+   
+   
+    merged = concatenate([flattened_price, state], axis=1)   # the most simplest merged model now 
     
-    merged = Dense(units=64,  activation="relu")(merged)
-    merged = Dense(units=8, activation="relu")(merged)
-  
+    #merged = Dense(units=64,  activation="relu")(merged)
+    merged = Dense(units=16, activation="relu")(merged)
     
-    preds = Dense(self.action_size, activation="linear")(merged) #   activation softmax could be used as well?
+    preds = Dense(self.action_size, activation="softmax")(merged) #   activation softmax could be used as well?
     
     model = Model(inputs=[price_input, state_input], outputs=preds)
     #model = Model(inputs=price_input, outputs=preds)
     
-    model.compile(optimizer='adam', loss="mse")
+    model.compile(optimizer=Adam(lr=self.learning_rate), loss="mse")
     
     # if Debug:
         # print("Model:")
@@ -70,7 +78,7 @@ class PVAgent:
     
     return model
     
-    # next is/was identical, just for info   if you prefer that way of building, but additional input will be added so previous one is easier to handle
+    # next is/was identical, just for info , not used,  if you prefer that way of building, but additional input will be added so previous one is easier to handle
     model = Sequential()
     model.add(Dense(units=64, input_shape=(self.feature_count,), activation="relu"))
     #model.add(Dense(units=32, activation="relu"))
@@ -85,7 +93,7 @@ class PVAgent:
     if not self.is_eval and np.random.rand() <= self.epsilon:
       return random.randrange(self.action_size)
       #return np.argmax(np.random.multinomial(1, [0.6, 0.2, 0.2]))   # see the distribution, so NO action is preferred to speed up training, maybe [0.8, 0.1, 0.1] could be used as well
-        # here could be some restrictions too 
+        # here could be some restrictions too , new model, index 0 is active -> sell to exit, back to normal distribution
       
     options = self.model.predict(state) # modified with 0
     return np.argmax(options[0])
@@ -110,7 +118,7 @@ class PVAgent:
       target_f[0][action] = target
 
       states0.append(state[0])  # modified state, only first , market_state
-      states1.append(state[1])  # position_state, added as list 
+      states1.append(state[1])  # position_state, added as a list 
       targets.append(target_f)
 
     self.model.fit([np.vstack(states0), np.vstack(states1)], [np.vstack(targets)], epochs=1, verbose=0)
