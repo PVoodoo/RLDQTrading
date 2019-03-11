@@ -19,7 +19,7 @@ from functions import *
 import sys
 import constant
 
-Debug=True
+Debug=constant.Debug
 
 if len(sys.argv) != 3:
 	print("Usage: python evaluate.py [stock] [model] ")
@@ -139,7 +139,6 @@ ax1.bar(ts, ts_PnL, color="b", label="PnL", width=0.8, zorder=4)
 ax1.plot(ts, ts_CumPnL, color="c", label="Cumulative PnL", zorder=1)
 ax1.bar(ts, ts_Action, color="y", label="Action", width=1.0, zorder=2)
 ax1.axhline(0, color='gray', lw=1)
-
 
 plt.legend()
 fig.tight_layout() 
