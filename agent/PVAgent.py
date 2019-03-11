@@ -24,7 +24,7 @@ class PVAgent:
   def __init__(self, time_steps, feature_count, is_eval=False, model_name=""):
     self.time_steps = time_steps  # period 
     self.feature_count = feature_count
-    self.action_size = 3  # no_action, buy, sell
+    self.action_size = 3  # no_action, buy, sell, 1 is actually based to constant.py now, it is active GO FLAT > exit trade, maybe 4 actions needed [No action, Long, Short, Flat]
     self.memory = deque(maxlen=256)  # according some new study, no need to be high at stock data .. but try 256,512,1024  (DayTrading -> short is okay)  
     self.inventory = []
     self.model_name = model_name
@@ -41,7 +41,6 @@ class PVAgent:
 
     
     # just a simple model first, add dropouts and experiment some diff shapes and sizes and activations
-   
   def _model(self):
   
   
@@ -64,7 +63,7 @@ class PVAgent:
     #merged = Dense(units=64,  activation="relu")(merged)
     merged = Dense(units=16, activation="relu")(merged)
     
-    preds = Dense(self.action_size, activation="softmax")(merged) #   activation softmax could be used as well?
+    preds = Dense(self.action_size, activation="softmax")(merged) #   activation linear, softmax could be used as well?
     
     model = Model(inputs=[price_input, state_input], outputs=preds)
     #model = Model(inputs=price_input, outputs=preds)
