@@ -31,6 +31,8 @@ functions.py  Actually have an important function, getNextPositionState as it de
 
 constant.py Defines some important values like Comissions, need to be changed based to instrument 
 
+[Further info of files & directories at blog](https://pvoodoo.blogspot.com/2019/03/example-of-reinforcement-learning.html?view=flipcard)
+
 ## Other:
 
 Probably some notebook formats added to use the whole system in colab.research.google.com (keras, GPU)
