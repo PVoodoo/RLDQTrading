@@ -22,7 +22,7 @@ import constant
 Debug=constant.Debug
 
 if len(sys.argv) != 3:
-	print("Usage: python evaluate.py [stock] [model] ")
+	print("Usage: python PVQEvaluate.py [stock] [model] ")
 	exit()
 
 stock_name, model_name = sys.argv[1], sys.argv[2] 
@@ -61,10 +61,11 @@ ts_eod = []
 ts_PnL =  np.zeros(l+1)
 ts_CumPnL = np.zeros(l+1)
 ts_Action = np.zeros(l+1)  # let's show that too what is proposed by nn
+numTrades = 0
 
 for t in range(l):
     action = agent.act(state)
-    ts_Action[t+1] = -1.0 if action >=2 else action  # just to show the action nicer , 2 = sell  
+    ts_Action[t] = -1.0 if action >=2 else action  # just to show the action nicer , 2 = sell  
     if int(eod[t]) == 1: # t or t + 1   ????????????????????????, t is right here, maybe the whole data should be sifted 1 
         ts_eod.append(t)
 
@@ -74,15 +75,17 @@ for t in range(l):
   
     # only change places drawn to the priceline
     if (action == 1) and (state[1][0][1] < constant.MAXCONTRACTS): #  and eod[t+1] < 1:# buy do not and if IGNORE_EOD_ACTIVATION, first action ignored , to be remembered  
-        ts_buy.append(t+1)
+        ts_buy.append(t)
+        numTrades +=1
         if Debug:
             print("Buy before, state",state[1][0])
     elif action == 2 and state[1][0][2] < constant.MAXCONTRACTS: #  and eod[t+1] < 1: # sell
-        ts_sell.append(t+1)
+        ts_sell.append(t)
+        numTrades +=1
         if Debug:
             print("Sell before, state",  state[1][0])
     elif action == 0 and state[1][0][0] < 1: # flat, either active or passive, see constant   
-        ts_flat.append(t+1)
+        ts_flat.append(t)
     
         
     next_position_state, immediate_reward, PnL = getNextPositionState(action, state[1][0], prices[t], prices[t+1], eod[t+1], eod[t])
@@ -98,8 +101,8 @@ for t in range(l):
      
 
     if PnL != 0.0:
-        ts_PnL[t+1] = PnL*constant.POINTVALUE
-    ts_CumPnL[t+1] = total_profit 
+        ts_PnL[t] = PnL*constant.POINTVALUE
+    ts_CumPnL[t] = total_profit 
     
     done = True if t == l - 1 else False
     next_state = [next_market_state, next_position_state.reshape(1,4)]
@@ -110,7 +113,7 @@ for t in range(l):
     
     if done:
         print("--------------------------------")
-        print(stock_name + " Total Profit : ", total_profit)
+        print(stock_name + " Total Profit : ", total_profit, " tradeCount: ", numTrades )
         print("--------------------------------")
 
         
