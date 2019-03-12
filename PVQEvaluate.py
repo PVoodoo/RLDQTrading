@@ -58,9 +58,9 @@ ts_buy = []
 ts_sell = []
 ts_flat = []
 ts_eod = []
-ts_PnL =  np.zeros(l+1)
-ts_CumPnL = np.zeros(l+1)
-ts_Action = np.zeros(l+1)  # let's show that too what is proposed by nn
+ts_PnL =  np.zeros(l)
+ts_CumPnL = np.zeros(l)
+ts_Action = np.zeros(l)  # let's show that too what is proposed by nn
 numTrades = 0
 
 for t in range(l):
@@ -97,6 +97,8 @@ for t in range(l):
             print("Buy after", next_position_state, PnL)
         elif action == 2 and state[1][0][2] < constant.MAXCONTRACTS: # sell 
             print("Sell after",  next_position_state, PnL)
+        if int(eod[t]) == 1 :
+            print(" ****************************************** EOD PNL:", PnL)
     
      
 
@@ -121,7 +123,7 @@ for t in range(l):
 # hi, matplot gurus, please help here :)        
 
 data = np.array(prices)
-ts = np.arange(l+1).astype(int)
+ts = np.arange(l).astype(int)
 ts_buy = np.array(ts_buy).astype(int)
 ts_sell = np.array(ts_sell).astype(int)
 ts_flat = np.array(ts_flat).astype(int)

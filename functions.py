@@ -281,9 +281,9 @@ def getNextPositionState(action, position_state, prev_price, price, eod, prev_eo
    
     
     if eod == 1:     # make flat after this BUT important, either action 1 or 2 can have affect (calculated above) , so last bar action has a very special handling
-        full_pnl = immediate_reward + full_pnl - position_state[1]*constant.COMMISSION - position_state[2]*constant.COMMISSION + immediate_reward # either one [1],[2] or both are zero 
+        full_pnl = full_pnl - position_state[1]*constant.COMMISSION - position_state[2]*constant.COMMISSION + immediate_reward # either one [1],[2] or both are zero 
         # full_pnl and immediate reward is calculated at action 1 and 2 above
-        #print("************************", full_pnl) see, this is not zero all the time
+        print("************************", full_pnl) # see, this is not zero all the time
         # immediate reward based to action above, if buy or sell 
         position_state[0] = 1
         position_state[1] = 0
