@@ -259,19 +259,19 @@ def getNextPositionState(action, position_state, prev_price, price, eod, prev_eo
     if action == 2:  # sell
         if LC > 0:
             full_pnl = position_state[3] - LC*constant.COMMISSION 
-            position_state[3] = -1*price_diff - constant.COMMISSION # one buy
+            position_state[3] = -1.0*price_diff - constant.COMMISSION # one buy
         if SC < constant.MAXCONTRACTS:  
-            immediate_reward = -1*price_diff - constant.COMMISSION # one buy, more 
+            immediate_reward = -1.0*price_diff - constant.COMMISSION # one buy, more 
             position_state[2] += 1 
             if SC > 0: # SC can't be positive then, no need to worry next at that point ,, CHECK LC == 0 and 
                 position_state[3] += (LC+1)*-1*price_diff
         if SC == constant.MAXCONTRACTS:
-            position_state[3] += SC*-1.0*price_diff   # and no immediate reward any more 
+            position_state[3] += -1.0*SC*price_diff   # and no immediate reward any more 
         if F == 1: 
             # immediate_reward = price_diff  # already above at LC <
             position_state[2] == 1
             # position_state[2] == 0 
-            position_state[3] = -1*price_diff - constant.COMMISSION
+            position_state[3] = -1.0*price_diff - constant.COMMISSION
             
         position_state[0] = 0
         position_state[1] = 0
@@ -281,7 +281,9 @@ def getNextPositionState(action, position_state, prev_price, price, eod, prev_eo
    
     
     if eod == 1:     # make flat after this BUT important, either action 1 or 2 can have affect (calculated above) , so last bar action has a very special handling
-        full_pnl = position_state[3] - position_state[1]*constant.COMMISSION - position_state[2]*constant.COMMISSION  # either one [1],[2] or both are zero 
+        full_pnl = immediate_reward + full_pnl - position_state[1]*constant.COMMISSION - position_state[2]*constant.COMMISSION + immediate_reward # either one [1],[2] or both are zero 
+        # full_pnl and immediate reward is calculated at action 1 and 2 above
+        #print("************************", full_pnl) see, this is not zero all the time
         # immediate reward based to action above, if buy or sell 
         position_state[0] = 1
         position_state[1] = 0
