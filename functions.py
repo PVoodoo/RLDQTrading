@@ -53,7 +53,25 @@ def make_timesteps(inArr, L = 2):
 
     strided = np.lib.stride_tricks.as_strided    
     return strided(a[L-1:], shape=(nd0,L,n), strides=(s0,-s0,s1))[L-1:]   
-        
+   
+import time
+import datetime
+ 
+class Timer(object):
+    def __init__(self, total):
+        self.start = datetime.datetime.now()
+        self.total = total
+ 
+    def remains(self, done):
+        now  = datetime.datetime.now()
+        # print("Wall time used ", now-self.start)  # elapsed time
+        left = (self.total - done) * (now - self.start) / max(done, 1)
+        secs = int(left.total_seconds())
+        if secs > 3600:
+           return "{0:.2f} hours".format(secs/3600)
+        else:
+           return "{0:.2f} minutes".format(secs/60)
+    
         
 # prints formatted price, not used
 def formatPrice(n):
@@ -197,10 +215,23 @@ def run_flat(position_state, immediate_reward):
     position_state[3] = 0.0;
     
     return position_state, immediate_reward, full_pnl
+ # not used 
+def run_flat_3(position_state, immediate_reward):
+
+    full_pnl = position_state[constant.PositionStateWidth - 1] + immediate_reward - position_state[1]*constant.COMMISSION - position_state[2]*constant.COMMISSION  # FYI either position_state[0 or 1] is zero or both
+
+    # set flat
+    for i in range(constant.PositionStateWidth):
+        position_state[i] = 0;
+    #position_state[1] = 0;
+    #position_state[2] = 0;
+    #position_state[3] = 0.0;
+    
+    return position_state, immediate_reward, full_pnl
 
 # let's skip the flat position between states, take opposite position at opposite signal, simplified version 
 # or actually different, should there be an additional action, exit => go Flat ???, yes , implemented with signal 0 (if active signal)
-def getNextPositionState(action, position_state, prev_price, price, eod, prev_eod):  # or think it like current  price and  next_price  !!!!!!!!!!!!!!!!!!!!!!
+def getNextPositionStateOldTwo(action, position_state, prev_price, price, eod, prev_eod):  # or think it like current  price and  next_price  !!!!!!!!!!!!!!!!!!!!!!
 # position state [Flat,Long,Short, Pnl]
     
     
@@ -210,6 +241,7 @@ def getNextPositionState(action, position_state, prev_price, price, eod, prev_eo
     comission_count = 0
     
     if constant.IGNORE_EOD_ACTIVATION and prev_eod == 1:  # no new state (should be okay after last bars flat set, BUT set anyway here again
+        print ("prev eod, should be 0", position_state[3])
         position_state[0] = 1
         position_state[1] = 0
         position_state[2] = 0
@@ -293,6 +325,103 @@ def getNextPositionState(action, position_state, prev_price, price, eod, prev_eo
     
     return  position_state, immediate_reward, full_pnl  # realize that position_state is not a new allocation, it points to prev np array where values has been changed 
 
+
+# let's skip the flat position between states, take opposite position at opposite signal, simplified version 
+# or actually different, should there be an additional action, exit => go Flat ???, yes , implemented with signal 0 (if active signal)
+def getNextPositionState(action, position_state, prev_price, price, eod, prev_eod):  # or think it like current  price and  next_price  !!!!!!!!!!!!!!!!!!!!!!
+# position state [Long,Short, Pnl]   # this way now !!!!!
+    
+    
+    price_diff = price - prev_price
+    immediate_reward = 0.0
+    full_pnl = 0.0
+    comission_count = 0
+    
+    if constant.IGNORE_EOD_ACTIVATION and prev_eod == 1:  # no new state (should be okay after last bars flat set, BUT set anyway here again
+        #print ("prev eod, should be 0", position_state[2])
+        position_state[0] = 0
+        position_state[1] = 0
+        position_state[2] = 0
+        #position_state[3] = 0.0
+        return position_state, 0.0, 0.0
+    
+    if action == 0: # next one used anyway now # and constant.ACTIONZERO == 1:
+        full_pnl = position_state[2] - position_state[0]*constant.COMMISSION - position_state[1]*constant.COMMISSION  # either one [1],[2] or both are zero 
+        # immediate_reward = 0.0
+        position_state[0] = 0
+        position_state[1] = 0
+        position_state[2] = 0
+        #position_state[3] = 0.0
+        return  position_state, immediate_reward, full_pnl   # 
+        
+        
+    # make some type cast not to compare floats
+    #F = int(position_state[0])  # Flat, either 0 or 1
+    LC = int(position_state[0])  # Long, how many contracts, stock_count or ..
+    SC = int(position_state[1])  # Short, how many ..
+    F = (LC == 0 and SC == 0) # to simple boolean
+    
+    
+    #prev_state = position_state[1] 
+    
+    if action == 1:  # buy
+        if SC > 0:
+            full_pnl = position_state[2] - SC*constant.COMMISSION 
+            position_state[2] = price_diff - constant.COMMISSION # one buy
+        if LC < constant.MAXCONTRACTS:  
+            immediate_reward = price_diff - constant.COMMISSION # one buy, more 
+            position_state[0] += 1 
+            if LC > 0: # SC can't be positive then, no need to worry next at that point ,, CHECK LC == 0 and 
+                position_state[2] += (LC+1)*price_diff
+                
+        if LC == constant.MAXCONTRACTS:
+            position_state[2] += LC*price_diff   # and no immediate reward any more 
+        if F : 
+            # immediate_reward = price_diff  # already above at LC <
+            position_state[0] == 1
+            # position_state[2] == 0 
+            position_state[2] = price_diff - constant.COMMISSION
+            
+        #position_state[0] = 0
+        position_state[1] = 0
+        # position_state[3]  # should be calculated above to all possibilities
+        
+    if action == 2:  # sell
+        if LC > 0:
+            full_pnl = position_state[2] - LC*constant.COMMISSION 
+            position_state[2] = -1.0*price_diff - constant.COMMISSION # one buy
+        if SC < constant.MAXCONTRACTS:  
+            immediate_reward = -1.0*price_diff - constant.COMMISSION # one buy, more 
+            position_state[1] += 1 
+            if SC > 0: # SC can't be positive then, no need to worry next at that point ,, CHECK LC == 0 and 
+                position_state[2] += (LC+1)*-1*price_diff
+        if SC == constant.MAXCONTRACTS:
+            position_state[2] += -1.0*SC*price_diff   # and no immediate reward any more 
+        if F: 
+            # immediate_reward = price_diff  # already above at LC <
+            position_state[1] == 1
+            # position_state[2] == 0 
+            position_state[2] = -1.0*price_diff - constant.COMMISSION
+            
+        #position_state[0] = 0
+        position_state[0] = 0
+        # position_state[3]  # should be calculated above to all possibilities
+  
+      
+   
+    
+    if eod == 1:     # make flat after this BUT important, either action 1 or 2 can have affect (calculated above) , so last bar action has a very special handling
+        full_pnl = full_pnl - position_state[0]*constant.COMMISSION - position_state[1]*constant.COMMISSION + immediate_reward # either one [1],[2] or both are zero 
+        # full_pnl and immediate reward is calculated at action 1 and 2 above
+        #print("************************", full_pnl) # see, this is not zero all the time
+        # immediate reward based to action above, if buy or sell 
+        #position_state[0] = 1
+        position_state[0] = 0
+        position_state[1] = 0
+        position_state[2] = 0.0
+        return  position_state, immediate_reward, full_pnl   # 
+    
+    return  position_state, immediate_reward, full_pnl  # realize that position_state is not a new allocation, it points to prev np array where values has been changed 
 
 
 

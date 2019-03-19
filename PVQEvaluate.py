@@ -42,14 +42,17 @@ agent = PVAgent(data.shape[1], data.shape[2], is_eval=True, model_name=model_nam
 l = len(data) - 1
 batch_size = 32
 
+ignorePositionState = False   # just for debugging purposes
 if Debug:
     print(prices.shape, data.shape, eod.shape)
 
+    
 total_profit = 0.0
 agent.inventory = []
 
 market_state = getState(data, 0)
-position_state = np.array([1,0,0,0.0]).reshape(1,4) # [Flat,Long,Short,PnL]  what the hell is turning this ... 
+#position_state = np.array([1,0,0,0.0]).reshape(1,4) # [Flat,Long,Short,PnL]  what the hell is turning this ... 
+position_state = np.zeros(constant.PositionStateWidth).reshape(1,constant.PositionStateWidth) 
 state = [market_state, position_state]
 
 
@@ -69,7 +72,14 @@ for t in range(l):
     if int(eod[t]) == 1: # t or t + 1   ????????????????????????, t is right here, maybe the whole data should be sifted 1 
         ts_eod.append(t)
 
-
+    # if ignorePositionState:  
+        # state[1][0][0] = 1  # ok, think as a flat always ...
+        # state[1][0][1] = 0
+        # state[1][0][2] = 0
+        # state[1][0][3] = 0
+        # if int(eod[t+1]) == 1:
+            # print(state[0])
+        
     next_market_state = getState(data, t + 1)
     
   
@@ -97,7 +107,7 @@ for t in range(l):
             print("Buy after", next_position_state, PnL)
         elif action == 2 and state[1][0][2] < constant.MAXCONTRACTS: # sell 
             print("Sell after",  next_position_state, PnL)
-        if int(eod[t]) == 1 :
+        if int(eod[t+1]) == 1 :
             print(" ****************************************** EOD PNL:", PnL)
     
      
@@ -107,7 +117,7 @@ for t in range(l):
     ts_CumPnL[t] = total_profit 
     
     done = True if t == l - 1 else False
-    next_state = [next_market_state, next_position_state.reshape(1,4)]
+    next_state = [next_market_state, next_position_state.reshape(1,constant.PositionStateWidth)]
  
     #agent.memory.append((state, action, reward, next_state, done))
     state = next_state

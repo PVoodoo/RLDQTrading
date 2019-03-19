@@ -4,6 +4,9 @@
 # Programming marko.rantala@pvoodoo.com 
 # 
  
+# model parameters
+PositionStateWidth = 3  # use 3 instead of 4 so far ...
+ 
 # as many contract allowed together, FYI, current model trade those one by one , 
 # here, although some different models can be thought where this is not fixed but variable based to account value and so on...  
 MAXCONTRACTS = 1

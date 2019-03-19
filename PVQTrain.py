@@ -52,15 +52,20 @@ batch_size = 32  # worth to check and check the memory length of agent replay me
 prices, market_data, eod = getStockDataVec(stock_name, timesteps, dayTrading=dayTrading)
 agent = PVAgent(timesteps, market_data.shape[2]) # feature size 
 l = len(prices) - 1
+
+timer = Timer(episode_count)
 if Debug:
     print("DataLength: ", l)
     print("Features: ", market_data.shape[2])
     print("Timesteps to use: ", market_data.shape[1])
     #print("Eod: ", eod[-5:])
+    
+    
 pnl_track = []
     
     
-position_state = np.array([1,0,0, 0.0 ]).reshape(1,4)
+#position_state = np.array([1,0,0, 0.0 ]).reshape(1,4)
+position_state = np.zeros(constant.PositionStateWidth).reshape(1,constant.PositionStateWidth) 
 best_profit = 0.0
 
 for e in range(episode_count + 1):
@@ -70,7 +75,8 @@ for e in range(episode_count + 1):
     market_state = getState(market_data, 0)
     #print(state)
     
-    position_state = np.array([1,0,0, 0.0 ]).reshape(1,4) # initialize flat [Flat,Long,Short,PnL]  what the hell is turning this ... anyway , ints to float so maybe some extra check for nextposition state calculation
+    #position_state = np.array([1,0,0, 0.0 ]).reshape(1,4) # initialize flat [Flat,Long,Short,PnL]  what the hell is turning this ... anyway , ints to float so maybe some extra check for nextposition state calculation
+    position_state = np.zeros(constant.PositionStateWidth).reshape(1,constant.PositionStateWidth) # flat removed
     total_profit = 0
     agent.inventory = []
 
@@ -86,6 +92,7 @@ for e in range(episode_count + 1):
         reward = 0
 
         
+        
         next_position_state, immediate_reward, PnL = getNextPositionState(action, state[1][0], prices[t], prices[t+1], eod[t+1], eod[t] )  # FYI, state[1] = position_state, lets think this eod t or t + 1 again!!!!!! t + 1 is correct, eof bar at next state!
         #print("after", next_position_state)
         
@@ -99,10 +106,10 @@ for e in range(episode_count + 1):
       
         if Debug:
             if t % 200 == 0:
-                print(PnL, next_position_state, immediate_reward )
+                print(PnL, next_position_state, immediate_reward)
 
         done = True if t == l - 1 else False
-        next_state = [next_market_state, next_position_state.reshape(1,4)]
+        next_state = [next_market_state, next_position_state.reshape(1,constant.PositionStateWidth)]
         #print(state, next_state)
         agent.memory.append((state, action, reward, next_state, done))
         state = next_state
@@ -111,7 +118,8 @@ for e in range(episode_count + 1):
 
         if done:
             print("--------------------------------")
-            print("Total Profit : ", total_profit)
+            print("Total Profit : {0:.4f}".format(total_profit))
+            print ("Time left: ", timer.remains(e+1))
             print("--------------------------------")
             pnl_track.append(total_profit)  
 
