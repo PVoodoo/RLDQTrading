@@ -16,8 +16,9 @@ from keras.optimizers import Adam
 import numpy as np
 import random
 from collections import deque
+import constant
 
-Debug=True
+Debug=True  # or constant.Debug
 
 
 class PVAgent:
@@ -35,7 +36,7 @@ class PVAgent:
     self.epsilon = 1.0
     self.epsilon_min = 0.01
     self.epsilon_decay = 0.995
-    self.learning_rate = 0.001   # actually a learning rate to Adam optimizer 
+    self.learning_rate = 0.001   # actually a learning rate to Adam optimizer, this might be even smaller as some ..
 
     self.model = load_model("models/" + model_name + ".h5") if is_eval else self._model()
 
@@ -44,15 +45,15 @@ class PVAgent:
   def _model(self):
   
   
-    price_input = Input(shape=(self.time_steps, self.feature_count))   # 3D shape here.., actually market features, suitable directly to recurrent neural networks
+    feature_input = Input(shape=(self.time_steps, self.feature_count))   # 3D shape here.., actually market features, suitable directly to recurrent neural networks
     
-    lstm = LSTM(32, return_sequences=True, activation="relu")(price_input)
+    lstm = LSTM(32, return_sequences=True, activation="relu")(feature_input)
     flattened_price = LSTM(16, return_sequences=False, activation="relu")(lstm)  # or without that but you need to set return sequences false at previous then to get flattened shape
     
     # flattened_price=lstm
-    #flattened_price = Flatten()(price_input)  # 3D shape is/was meant to LSTMm, CONV, recurrent models,  keep time_steps short otherwise, even 1 if reasonable feature match, try those recurrent ones too!!
+    #flattened_price = Flatten()(feature_input)  # 3D shape is/was meant to LSTMm, CONV, recurrent models,  keep time_steps short otherwise, even 1 if reasonable feature match, try those recurrent ones too!!
     
-    state_input = Input(shape=(4,)) # 2D [Flat,Long,Short,Current_PnL]  anyway to merge this , position features
+    state_input = Input(shape=(constant.PositionStateWidth,)) # 2D [Flat no more  => Long,Short,Current_PnL]  anyway to merge this , position features
  
     state = Dense(8, activation="relu")(state_input)
     #state_input = Input() what if this is not connected ?, lets try
@@ -65,8 +66,8 @@ class PVAgent:
     
     preds = Dense(self.action_size, activation="softmax")(merged) #   activation linear, softmax could be used as well?
     
-    model = Model(inputs=[price_input, state_input], outputs=preds)
-    #model = Model(inputs=price_input, outputs=preds)
+    model = Model(inputs=[feature_input, state_input], outputs=preds)
+    #model = Model(inputs=feature_input, outputs=preds)
     
     model.compile(optimizer=Adam(lr=self.learning_rate), loss="mse")
     
@@ -77,7 +78,7 @@ class PVAgent:
     
     return model
     
-    # next is/was identical, just for info , not used,  if you prefer that way of building, but additional input will be added so previous one is easier to handle
+    # next is/was identical, just for info , not used any more and don't even fit to input any more,  if you prefer that way of building, but additional input will be added so previous one is easier to handle
     model = Sequential()
     model.add(Dense(units=64, input_shape=(self.feature_count,), activation="relu"))
     #model.add(Dense(units=32, activation="relu"))
