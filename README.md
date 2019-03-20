@@ -13,21 +13,21 @@ Additional files coming step by step:
 
 PVQTrain.py = main train program, DayTrading model inside, 
 Usage: python PVQTrain.py [stockfile] [episodes] [timesteps]
-Example: python PVQTrain.py RLDataForCL30 1000 4
+Example: python PVQTrain.py RLDataForCL60D 4000 4
+![Output:](data/CL60D_train.PNG)
 
-DayTrading:
-Example: python PVQTrain.py RLDataForCL30D 1000 4 
 
 PVQEvaluate.py to show and predict trades, out of data too
 Usage: python PVQEvaluate.py [stockfile] [model]
+Example: python PVQEvaluate.py RLDataForCL60D RLDataForCL60D_4000
+![Output:](data/CL60D_evaluate.PNG)
 
-Example: python PVQEvaluate.py RLDataForCL30 RLDataForCL30_1000 
+![Zoomed Output:](data/CL60D_evaluate_zoomed.PNG)
 
-Example: python PVQEvaluate.py RLDataOutOfDataForCL30D RLDataForCL30D_1000 
 
-PVAgent.py keras model and reinforcement learning setup 
+PVAgent.py keras model and reinforcement learning setup, some setup moved to constant.py
 
-functions.py  Actually have an important function, getNextPositionState as it defines how the predicted actions are handled, now step by step, like no immediate reverse position from other position (has to go via Flat state)
+functions.py  Actually have an important function, getNextPositionState as it defines how the predicted actions are handled
 
 constant.py Defines some important values like Comissions, need to be changed based to instrument 
 
