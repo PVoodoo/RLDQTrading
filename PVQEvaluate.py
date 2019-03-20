@@ -5,6 +5,7 @@
 # v1.0.0.1 20190305 
 # v1.0.0.2 20190307 eod
 # v1.0.1.0 20190310 Start of 
+# v1.0.2.0 # state size 3
 ##############################
 # my own ad: For NinjaTrader related stuff: check https://pvoodoo.com or blog: https://pvoodoo.blogspot.com/?view=flipcard
 ##############################
@@ -84,17 +85,17 @@ for t in range(l):
     
   
     # only change places drawn to the priceline
-    if (action == 1) and (state[1][0][1] < constant.MAXCONTRACTS): #  and eod[t+1] < 1:# buy do not and if IGNORE_EOD_ACTIVATION, first action ignored , to be remembered  
+    if (action == 1) and (state[1][0][0] < constant.MAXCONTRACTS): #  and eod[t+1] < 1:# buy do not and if IGNORE_EOD_ACTIVATION, first action ignored , to be remembered  
         ts_buy.append(t)
         numTrades +=1
         if Debug:
             print("Buy before, state",state[1][0])
-    elif action == 2 and state[1][0][2] < constant.MAXCONTRACTS: #  and eod[t+1] < 1: # sell
+    elif action == 2 and state[1][0][1] < constant.MAXCONTRACTS: #  and eod[t+1] < 1: # sell
         ts_sell.append(t)
         numTrades +=1
         if Debug:
             print("Sell before, state",  state[1][0])
-    elif action == 0 and state[1][0][0] < 1: # flat, either active or passive, see constant   
+    elif action == 0 and (state[1][0][0] > 0 or state[1][0][1] > 0): # flat, either active or passive, see constant   
         ts_flat.append(t)
     
         
@@ -103,9 +104,9 @@ for t in range(l):
     #reward = immediate_reward + PnL
     
     if (Debug):
-        if (action == 1) and (state[1][0][1] < constant.MAXCONTRACTS):# buy
+        if (action == 1) and (state[1][0][0] < constant.MAXCONTRACTS):# buy
             print("Buy after", next_position_state, PnL)
-        elif action == 2 and state[1][0][2] < constant.MAXCONTRACTS: # sell 
+        elif action == 2 and state[1][0][1] < constant.MAXCONTRACTS: # sell 
             print("Sell after",  next_position_state, PnL)
         if int(eod[t+1]) == 1 :
             print(" ****************************************** EOD PNL:", PnL)
