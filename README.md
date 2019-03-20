@@ -14,15 +14,15 @@ Additional files coming step by step:
 PVQTrain.py = main train program, DayTrading model inside, 
 Usage: python PVQTrain.py [stockfile] [episodes] [timesteps]
 Example: python PVQTrain.py RLDataForCL60D 4000 4
-![Output:](data/CL60D_train.PNG)
+![Output:](info/CL60D_train.PNG)
 
 
 PVQEvaluate.py to show and predict trades, out of data too
 Usage: python PVQEvaluate.py [stockfile] [model]
 Example: python PVQEvaluate.py RLDataForCL60D RLDataForCL60D_4000
-![Output:](data/CL60D_evaluate.PNG)
+![Output:](info/CL60D_evaluate.PNG)
 
-![Zoomed Output:](data/CL60D_evaluate_zoomed.PNG)
+![Zoomed Output:](info/CL60D_evaluate_zoomed.PNG)
 
 
 PVAgent.py keras model and reinforcement learning setup, some setup moved to constant.py
