@@ -25,13 +25,13 @@ class PVAgent:
   def __init__(self, time_steps, feature_count, is_eval=False, model_name=""):
     self.time_steps = time_steps  # period 
     self.feature_count = feature_count
-    self.action_size = 3  # no_action, buy, sell, 1 is actually based to constant.py now, it is active GO FLAT > exit trade, maybe 4 actions needed [No action, Long, Short, Flat]
-    self.memory = deque(maxlen=256)  # according some new study, no need to be high at stock data .. but try 256,512,1024  (DayTrading -> short is okay)  
+    self.action_size = 3  # no_action, buy, sell, 1 is actually based to constant.py now, it is active GO FLAT > exit trade, maybe 4 actions needed [No action, Long, Short, Exit]
+    self.memory = deque(maxlen=256)  # according some new study, no need to be high at stock data .. but try 128,256,512  (DayTrading -> short is okay)  
     self.inventory = []
     self.model_name = model_name
     self.is_eval = is_eval
 
-    # next ones are actually quite important here, try with different settings!
+    # next ones are actually quite important parameters here, try with different settings!, general guidance is available from the web
     self.gamma = 0.80   #
     self.epsilon = 1.0
     self.epsilon_min = 0.01
@@ -41,30 +41,30 @@ class PVAgent:
     self.model = load_model("models/" + model_name + ".h5") if is_eval else self._model()
 
     
-    # just a simple model first, add dropouts and experiment some diff shapes and sizes and activations
+    # just a simple model first, add dropouts and experiment some dif shapes and sizes and activations  (tanh?, but set scaler ?)
   def _model(self):
   
   
-    feature_input = Input(shape=(self.time_steps, self.feature_count))   # 3D shape here.., actually market features, suitable directly to recurrent neural networks
+    feature_input = Input(shape=(self.time_steps, self.feature_count), name="Market_inputs")   # 3D shape here.., actually market features, suitable directly to recurrent neural networks
     
     lstm = LSTM(32, return_sequences=True, activation="relu")(feature_input)
-    flattened_price = LSTM(16, return_sequences=False, activation="relu")(lstm)  # or without that but you need to set return sequences false at previous then to get flattened shape
+    flattened_features = LSTM(16, return_sequences=False, activation="relu")(lstm)  # or without that but you need to set return sequences false at previous then to get flattened shape
     
     # flattened_price=lstm
     #flattened_price = Flatten()(feature_input)  # 3D shape is/was meant to LSTMm, CONV, recurrent models,  keep time_steps short otherwise, even 1 if reasonable feature match, try those recurrent ones too!!
     
-    state_input = Input(shape=(constant.PositionStateWidth,)) # 2D [Flat no more  => Long,Short,Current_PnL]  anyway to merge this , position features
+    state_input = Input(shape=(constant.PositionStateWidth,), name="Position_inputs") # 2D [Flat no more  => Long,Short,Current_PnL]  anyway to merge this , position features
  
     state = Dense(8, activation="relu")(state_input)
     #state_input = Input() what if this is not connected ?, lets try
    
    
-    merged = concatenate([flattened_price, state], axis=1)   # the most simplest merged model now 
+    merged = concatenate([flattened_features, state], axis=1)   # the most simplest merged model now 
     
     #merged = Dense(units=64,  activation="relu")(merged)
     merged = Dense(units=16, activation="relu")(merged)
     
-    preds = Dense(self.action_size, activation="softmax")(merged) #   activation linear, softmax could be used as well?
+    preds = Dense(self.action_size, activation="softmax", name="Actions")(merged) #   activation linear, softmax could be used as well?
     
     model = Model(inputs=[feature_input, state_input], outputs=preds)
     #model = Model(inputs=feature_input, outputs=preds)
@@ -79,15 +79,13 @@ class PVAgent:
     return model
     
     # next is/was identical, just for info , not used any more and don't even fit to input any more,  if you prefer that way of building, but additional input will be added so previous one is easier to handle
-    model = Sequential()
-    model.add(Dense(units=64, input_shape=(self.feature_count,), activation="relu"))
-    #model.add(Dense(units=32, activation="relu"))
-    model.add(Dense(units=8, activation="relu"))
-    model.add(Dense(self.action_size, activation="linear"))  # or use softmax 
-    #model.compile(loss="mse", optimizer=Adam(lr=0.001))
-    model.compile(loss="mse", optimizer=Adam())
+    # model = Sequential()
+    # model.add(Dense(units=64, input_shape=(self.feature_count,), activation="relu"))
+    # model.add(Dense(units=8, activation="relu"))
+    # model.add(Dense(self.action_size, activation="linear"))  # or use softmax 
+    # model.compile(loss="mse", optimizer=Adam())
 
-    return model
+    # return model
 
   def act(self, state):
     if not self.is_eval and np.random.rand() <= self.epsilon:
