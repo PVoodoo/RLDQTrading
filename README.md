@@ -17,6 +17,10 @@ Usage: python PVQTrain.py [stockfile] [episodes] [timesteps]
 
 Example: python PVQTrain.py RLDataForCL60D 4000 4
 
+OR 
+#import PVQTrain
+PVQTrain.main(stock_name, episodes, timesteps)
+
 ![Output:](info/CL60D_train.PNG)
 
 
