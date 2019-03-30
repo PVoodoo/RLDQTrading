@@ -41,7 +41,7 @@ class PVAgent:
     self.model = load_model("models/" + model_name + ".h5") if is_eval else self._model()
 
     
-    # just a simple model first, add dropouts and experiment some dif shapes and sizes and activations  (tanh?, but set scaler ?)
+    # just a simple model first, add dropouts or batch normalization and experiment some dif shapes and sizes and activations  (tanh?, but set scaler ?)
   def _model(self):
   
   
